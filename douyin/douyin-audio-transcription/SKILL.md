@@ -19,11 +19,18 @@ Use a subtitle-first, audio-first pipeline for general video transcription. Do n
 
    Inspect `subtitles` and `automatic_captions`. This detects downloadable soft subtitles only, not text burned into video frames. An empty subtitle list is a normal branch, not a fatal error.
 3. If subtitles exist, download the selected subtitle formats/languages and convert them with `scripts/convert_subtitles.py`. Do not download MP4 or audio unnecessarily.
-4. If no subtitles exist, extract audio only. Set `OUT` to the current project root: use `git rev-parse --show-toplevel` when available, otherwise the current working directory.
+4. If no subtitles exist, extract audio only. Set `OUT` to the current project root: use `git rev-parse --show-toplevel` when available, otherwise the current working directory. Resolve the outer directory name from the video title before downloading: keep only the primary title before the first `#`, trim whitespace, sanitize filesystem characters, and fall back to the video ID if the result is empty.
 
    ```bash
+   VIDEO_ID="$(yt-dlp --cookies-from-browser chrome --print id --skip-download "$URL" | tail -1)"
+   RAW_TITLE="$(yt-dlp --cookies-from-browser chrome --print title --skip-download "$URL" | tail -1)"
+   MAIN_TITLE="${RAW_TITLE%%#*}"
+   MAIN_TITLE="$(printf '%s' "$MAIN_TITLE" | sed 's/[[:space:]]*$//' | sed 's#[/:?*\\]#_#g')"
+   [ -n "$MAIN_TITLE" ] || MAIN_TITLE="$VIDEO_ID"
+   VIDEO_DIR="$OUT/douyin/$MAIN_TITLE [$VIDEO_ID]"
+   mkdir -p "$VIDEO_DIR/音频"
    yt-dlp --cookies-from-browser chrome -x --audio-format m4a \
-     -o "$OUT/douyin/%(title)s [%(id)s]/音频/%(id)s.%(ext)s" "$URL"
+     -o "$VIDEO_DIR/音频/$VIDEO_ID.%(ext)s" "$URL"
    ```
 
 5. Run MLX Whisper and produce an intermediate SRT:
@@ -65,7 +72,7 @@ Use a subtitle-first, audio-first pipeline for general video transcription. Do n
         └── <视频ID>.vtt
 ```
 
-Prefer the fetched video `title` for the outer directory. If title metadata is empty, inaccessible, too long, or sanitizes to an empty string, use the video ID. Do not use `--restrict-filenames`; it discards useful Chinese title text. Sanitize `/`, `:`, `?`, `*`, `\\`, control characters, and trailing dots/spaces for macOS compatibility, retain the ID to avoid collisions, and check before overwriting.
+Prefer the fetched video primary `title` for the outer directory. Strip the hashtag suffix beginning at the first `#`; do not include topic tags in the directory name. If title metadata is empty, inaccessible, too long, or sanitizes to an empty string, use the video ID. Do not use `--restrict-filenames`; it discards useful Chinese title text. Sanitize `/`, `:`, `?`, `*`, `\\`, control characters, and trailing dots/spaces for macOS compatibility, retain the ID to avoid collisions, and check before overwriting.
 
 ## Resources
 

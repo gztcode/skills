@@ -30,7 +30,7 @@ Use a subtitle-first, audio-first pipeline for general video transcription. Do n
    VIDEO_DIR="$OUT/douyin/$MAIN_TITLE [$VIDEO_ID]"
    mkdir -p "$VIDEO_DIR/音频"
    yt-dlp --cookies-from-browser chrome -x --audio-format m4a \
-     -o "$VIDEO_DIR/音频/$VIDEO_ID.%(ext)s" "$URL"
+     -o "$VIDEO_DIR/音频/$MAIN_TITLE.%(ext)s" "$URL"
    ```
 
 5. Run MLX Whisper and produce an intermediate SRT:
@@ -54,10 +54,10 @@ Use a subtitle-first, audio-first pipeline for general video transcription. Do n
    python3 scripts/convert_subtitles.py \
      --input "$CAPTION_DIR/<video-id>.srt" \
      --output-dir "$CAPTION_DIR" \
-     --simplified
+     --simplified --name "$MAIN_TITLE"
    ```
 
-   The script creates `<video-id>.txt`, `<video-id>.srt`, and `<video-id>.vtt`, preserving timestamps in SRT/VTT and applying OpenCC `t2s` to all text.
+   The script creates `<主标题>.txt`, `<主标题>.srt`, and `<主标题>.vtt`, preserving timestamps in SRT/VTT and applying OpenCC `t2s` to all text. The intermediate SRT may use the video ID; final media and caption filenames use only the primary title.
 7. Only if the user explicitly needs burned-in visual text and ASR is insufficient, download MP4, sample frames, and use OCR. `ffmpeg` extracts frames; it does not perform OCR.
 
 ## Output Layout
@@ -66,13 +66,14 @@ Use a subtitle-first, audio-first pipeline for general video transcription. Do n
 <project-root>/douyin/
 └── 视频标题 [视频ID]/
     ├── 音频/
+    │   └── 视频标题.m4a
     └── 字幕/
-        ├── <视频ID>.txt
-        ├── <视频ID>.srt
-        └── <视频ID>.vtt
+        ├── 视频标题.txt
+        ├── 视频标题.srt
+        └── 视频标题.vtt
 ```
 
-Prefer the fetched video primary `title` for the outer directory. Strip the hashtag suffix beginning at the first `#`; do not include topic tags in the directory name. If title metadata is empty, inaccessible, too long, or sanitizes to an empty string, use the video ID. Do not use `--restrict-filenames`; it discards useful Chinese title text. Sanitize `/`, `:`, `?`, `*`, `\\`, control characters, and trailing dots/spaces for macOS compatibility, retain the ID to avoid collisions, and check before overwriting.
+Use the same sanitized primary title for the audio, video, and final caption filenames. The outer directory remains `<主标题> [视频ID]` so duplicate titles stay distinct. Strip the hashtag suffix beginning at the first `#`; do not include topic tags. If title metadata is empty, inaccessible, too long, or sanitizes to an empty string, use the video ID for both directory and filenames. Do not use `--restrict-filenames`; it discards useful Chinese title text. Sanitize `/`, `:`, `?`, `*`, `\\`, control characters, and trailing dots/spaces for macOS compatibility, and check before overwriting.
 
 ## Resources
 

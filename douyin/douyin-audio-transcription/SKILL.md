@@ -23,8 +23,9 @@ Use a subtitle-first, audio-first pipeline. Avoid downloading a full MP4 or runn
    ```bash
    # Resolve title first; use a sanitized title as the per-video folder,
    # falling back to %(id)s when title is missing or unusable.
+   # Set OUT to the current project's root (git root when available).
    yt-dlp --cookies-from-browser chrome -x --audio-format m4a \
-     -o "$OUT/%(title)s [%(id)s]/音频/%(id)s.%(ext)s" "$URL"
+     -o "$OUT/douyin/%(title)s [%(id)s]/音频/%(id)s.%(ext)s" "$URL"
    ```
 
 5. Run Apple Silicon ASR with MLX:
@@ -52,7 +53,7 @@ Use a subtitle-first, audio-first pipeline. Avoid downloading a full MP4 or runn
 ## Output Layout
 
 ```text
-~/Desktop/抖音歌曲/
+<project-root>/douyin/
 ├── 视频标题 A [视频ID]/
 │   ├── 音频/
 │   ├── 字幕/
@@ -62,6 +63,8 @@ Use a subtitle-first, audio-first pipeline. Avoid downloading a full MP4 or runn
 │   └── ...
 └── （每条视频一个独立目录）
 ```
+
+Resolve `<project-root>` with `git rev-parse --show-toplevel`; if the current directory is not inside a Git repository, use the current working directory. Do not default to `~/Desktop` or another fixed user directory. Keep all generated files inside the current project unless the user explicitly chooses another output root.
 
 Prefer the fetched video `title` for the outer directory. Do not use `--restrict-filenames`, because it discards useful Chinese title text. If title metadata is empty, inaccessible, too long, or sanitizes to an empty string, use the video ID. Sanitize `/`, `:`, `?`, `*`, `\\`, control characters, and trailing dots/spaces for macOS compatibility; cap the directory name at a practical length and retain the ID to avoid collisions. Check before overwriting existing files.
 

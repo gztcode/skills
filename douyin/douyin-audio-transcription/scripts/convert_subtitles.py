@@ -23,6 +23,7 @@ def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--input", required=True, type=Path)
     parser.add_argument("--output-dir", required=True, type=Path)
+    parser.add_argument("--name", help="Output basename; defaults to the input stem")
     parser.add_argument("--simplified", action="store_true")
     args = parser.parse_args()
 
@@ -40,7 +41,7 @@ def main() -> None:
 
     converted = [(number, timing, convert(caption)) for number, timing, caption in blocks]
     args.output_dir.mkdir(parents=True, exist_ok=True)
-    stem = args.input.stem
+    stem = args.name or args.input.stem
 
     (args.output_dir / f"{stem}.txt").write_text(
         "\n".join(caption.replace("\n", " ") for _, _, caption in converted) + "\n",
